@@ -9,7 +9,7 @@ type Repository interface {
 type InMemoryStorage struct {
 	transactions []Transaction
 	subscribers  []string
-	currentBlock int
+	currentBlock int64
 }
 
 // Make sure InMemoryStorage implements the Repository interface

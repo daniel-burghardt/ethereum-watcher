@@ -6,13 +6,17 @@ import (
 	"strconv"
 )
 
-func HexToInt(amountHex string) (int64, error) {
-	amount, err := strconv.ParseInt(amountHex, 0, 64)
+func HexToInt(number string) (int64, error) {
+	amount, err := strconv.ParseInt(number, 0, 64)
 	if err != nil {
 		return 0, fmt.Errorf("parsing hex to int: %w", err)
 	}
 
 	return amount, nil
+}
+
+func IntToHex(number int64) string {
+	return fmt.Sprintf("0x%x", number)
 }
 
 func WeiToEth(wei int64) float64 {

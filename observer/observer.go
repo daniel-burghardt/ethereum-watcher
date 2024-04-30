@@ -18,55 +18,64 @@ type Service struct {
 }
 
 func (s *Service) Start() error {
-	log.Println("Starting transactions observer...")
+	log.Printf("Starting transactions observer on node %s...", s.RPC.Url)
 
-	filterID, err := s.RPC.InvokeNewBlockFilter()
+	latestBlock, err := s.RPC.InvokeBlockNumber()
 	if err != nil {
-		return fmt.Errorf("invoking newBlockFilter: %w", err)
+		return fmt.Errorf("invoking blockNumber: %w", err)
 	}
 
-	for {
+	for currentBlock := latestBlock; ; {
 		log.Println("Checking for new block...")
-		blockHashes, err := s.RPC.InvokeGetFilterChanges(filterID)
+
+		latestBlock, err := s.RPC.InvokeBlockNumber()
 		if err != nil {
-			return fmt.Errorf("invoking getFilterChanges: %w", err)
+			return fmt.Errorf("invoking blockNumber: %w", err)
 		}
 
-		for _, hash := range blockHashes {
-			log.Printf("Processing block %s", hash)
-
-			subscribers, err := s.Repo.GetSubscribers()
-			if err != nil {
-				return fmt.Errorf("getting subscribers: %w", err)
-			}
-
-			block, err := s.RPC.InvokeGetBlockByHash(hash)
-			if err != nil {
-				return fmt.Errorf("invoking getBlockByHash: %w", err)
-			}
-
-			for _, ethTx := range block.Transactions {
-				// Verify whether either From or To addresses match any of the subscribed addresses
-				if !slices.ContainsFunc(subscribers, func(sub string) bool {
-					return strings.EqualFold(sub, ethTx.From) || strings.EqualFold(sub, ethTx.To)
-				}) {
-					continue
-				}
-
-				log.Printf("Subscribed address found, storing transaction")
-
-				tx, err := ParseTransaction(ethTx)
-				if err != nil {
-					return fmt.Errorf("parsing transaction: %w", err)
-				}
-
-				s.Repo.AddTransaction(tx)
-			}
-		}
-
-		if len(blockHashes) == 0 {
+		// If already caught up to latest, wait until next check
+		if currentBlock >= latestBlock {
 			time.Sleep(time.Second * 1)
+			continue
 		}
+
+		log.Printf("Processing block %d", currentBlock)
+
+		subscribers, err := s.Repo.GetSubscribers()
+		if err != nil {
+			return fmt.Errorf("getting subscribers: %w", err)
+		}
+
+		block, err := s.RPC.InvokeGetBlockByNumber(currentBlock)
+		if err != nil {
+			return fmt.Errorf("invoking getBlockByHash: %w", err)
+		}
+
+		// Ingest block transactions
+		for _, ethTx := range block.Transactions {
+			// Verify whether either From or To addresses match any of the subscribed addresses
+			if !slices.ContainsFunc(subscribers, func(sub string) bool {
+				return strings.EqualFold(sub, ethTx.From) || strings.EqualFold(sub, ethTx.To)
+			}) {
+				continue
+			}
+
+			log.Printf("Subscribed address found, storing transaction")
+
+			tx, err := ParseTransaction(ethTx)
+			if err != nil {
+				return fmt.Errorf("parsing transaction: %w", err)
+			}
+
+			s.Repo.AddTransaction(tx)
+		}
+
+		err = s.Repo.UpdateCurrentBlock(currentBlock)
+		if err != nil {
+			return fmt.Errorf("updating currentBlock: %w", err)
+		}
+
+		currentBlock++
 	}
 }
 

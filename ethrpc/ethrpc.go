@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/daniel-burghardt/ethereum-parser/util"
 )
 
 type RequestBody struct {
@@ -60,49 +62,27 @@ func (s *Service) invokeMethod(reqBody RequestBody) (any, error) {
 	return *respBody.Result, nil
 }
 
-func (s *Service) InvokeNewBlockFilter() (string, error) {
+func (s *Service) InvokeBlockNumber() (int64, error) {
 	result, err := s.invokeMethod(RequestBody{
 		Version: "2.0",
-		Method:  "eth_newBlockFilter",
+		Method:  "eth_blockNumber",
 		Params:  []any{},
 	})
 	if err != nil {
-		return "", fmt.Errorf("invoking method: %w", err)
+		return 0, fmt.Errorf("invoking method: %w", err)
 	}
 
-	filterID, ok := result.(string)
+	blockNumberHex, ok := result.(string)
 	if !ok {
-		return "", fmt.Errorf("unexpected response result type: %s", result)
+		return 0, fmt.Errorf("unexpected response result type: %s", result)
 	}
 
-	return filterID, nil
-}
-
-func (s *Service) InvokeGetFilterChanges(filterID string) ([]string, error) {
-	result, err := s.invokeMethod(RequestBody{
-		Version: "2.0",
-		Method:  "eth_getFilterChanges",
-		Params:  []any{filterID},
-	})
+	blockNumber, err := util.HexToInt(blockNumberHex)
 	if err != nil {
-		return []string{}, fmt.Errorf("invoking method: %w", err)
+		return 0, fmt.Errorf("parsing block number: %w", err)
 	}
 
-	resultArray, ok := result.([]any)
-	if !ok {
-		return []string{}, fmt.Errorf("unexpected response result type: %s", result)
-	}
-
-	blockHashes := []string{}
-	for _, hash := range resultArray {
-		hashStr, ok := hash.(string)
-		if !ok {
-			return []string{}, fmt.Errorf("unexpected response result type: %s", result)
-		}
-		blockHashes = append(blockHashes, hashStr)
-	}
-
-	return blockHashes, nil
+	return blockNumber, nil
 }
 
 type EthBlock struct {
@@ -117,11 +97,12 @@ type EthTransaction struct {
 	Value            string `json:"value"`
 }
 
-func (s *Service) InvokeGetBlockByHash(blockHash string) (EthBlock, error) {
+func (s *Service) InvokeGetBlockByNumber(blockNumber int64) (EthBlock, error) {
+	blockNumberHex := util.IntToHex(blockNumber)
 	result, err := s.invokeMethod(RequestBody{
 		Version: "2.0",
-		Method:  "eth_getBlockByHash",
-		Params:  []any{blockHash, true},
+		Method:  "eth_getBlockByNumber",
+		Params:  []any{blockNumberHex, true},
 	})
 	if err != nil {
 		return EthBlock{}, fmt.Errorf("invoking method: %w", err)
