@@ -49,9 +49,9 @@ In the same fashion, the webhook URL can be set with `export WEBHOOK_URL=https:/
 
 The current implementation uses the `eth_blockNumber` method to fetch the latest block from the ledger. However, this method presented some lag in the tests conducted, taking a few seconds after the closing time of the latest block to return the updated value.
 
-An alternative version calling `eth_getBlockByNumber` directly until the response is not empty is implemented on separate branch `performance-improvement`. This approach presented a significant performance improvement over the current one, but it relies on RPC method calls to error, which resulted in a different response objects in the tests conducted (with `https://rpc.sepolia.org` and `https://cloudflare-eth.com`) depending on the RPC node. Although promising this approach requires some further experimentations.
+An alternative version calling `eth_getBlockByNumber` directly until the response is not empty is implemented on separate branch `performance-improvement`. This approach presented a significant performance improvement (delays below 1s) over the current one, but it relies on RPC method calls to error, which resulted in a different response objects in the tests conducted (with `https://rpc.sepolia.org` and `https://cloudflare-eth.com`) depending on the RPC node. Although promising this approach requires some further experimentations.
 
-A third alternative was also tested using `eth_newBlockFilter` and `eth_getFilterChanges` to get the latest block information. However, Cloudflare's RPC node doesn't support either of the methods as of now: see [docs](https://developers.cloudflare.com/web3/ethereum-gateway/reference/supported-api-methods/).
+A third alternative was also tested using `eth_newBlockFilter` and `eth_getFilterChanges` to get the latest block information. Although it presented great performance improvement (similar to the one described above), Cloudflare's Public RPC node doesn't support either of the methods as of now: see [docs](https://developers.cloudflare.com/web3/ethereum-gateway/reference/supported-api-methods/).
 
 ### Webhook
 
