@@ -36,7 +36,12 @@ func main() {
 		WebhookUrl: webhookUrl,
 	}
 
-	go observerService.Start()
+	go func() {
+		err := observerService.Start()
+		if err != nil {
+			log.Fatalf("observer killed: %v", err)
+		}
+	}()
 
 	log.Printf("Starting the server on port %d...", serverPort)
 	http.HandleFunc("/", http.NotFound)
