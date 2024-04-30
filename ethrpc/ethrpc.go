@@ -3,6 +3,7 @@ package ethrpc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -57,6 +58,10 @@ func (s *Service) invokeMethod(reqBody RequestBody) (any, error) {
 
 	if respBody.Error != nil {
 		return nil, fmt.Errorf("invalid request: %s", respBody.Error.Message)
+	}
+
+	if respBody.Result == nil {
+		return nil, errors.New("no result")
 	}
 
 	return *respBody.Result, nil
