@@ -29,6 +29,8 @@ Subscribes `{address}` to the watcher service. Once subscribed, its transactions
 
 Returns an array of all transactions sent to or received by `{address}` after the time of subscription.
 
+_Note: The API server is started by default on port `3000`. The base URL for API calls is `http://localhost:3000` when running locally._
+
 ## Running
 
 ### Requirements
