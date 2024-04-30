@@ -16,9 +16,9 @@ const serverPort = 3000
 
 func main() {
 	// Get ENVs
-	serverUrl := os.Getenv("ETH_SERVER_URL")
-	if serverUrl == "" {
-		serverUrl = "https://cloudflare-eth.com"
+	ethServerUrl := os.Getenv("ETH_SERVER_URL")
+	if ethServerUrl == "" {
+		ethServerUrl = "https://cloudflare-eth.com"
 	}
 	webhookUrl := os.Getenv("WEBHOOK_URL")
 
@@ -28,7 +28,7 @@ func main() {
 		Repo: repo,
 	}
 	rpcService := ethrpc.Service{
-		Url: serverUrl,
+		Url: ethServerUrl,
 	}
 	observerService := observer.Service{
 		RPC:        rpcService,
