@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/daniel-burghardt/ethereum-parser/util"
 )
@@ -91,6 +92,7 @@ func (s *Service) InvokeBlockNumber() (int64, error) {
 }
 
 type EthBlock struct {
+	Number       string           `json:"number"`
 	Transactions []EthTransaction `json:"transactions"`
 }
 
@@ -109,6 +111,10 @@ func (s *Service) InvokeGetBlockByNumber(blockNumber int64) (EthBlock, error) {
 		Method:  "eth_getBlockByNumber",
 		Params:  []any{blockNumberHex, true},
 	})
+	// Format of the response varies depending on the RPC node, but the following should indicate that the requested block is not yet available
+	if err != nil && (strings.Contains(err.Error(), "Resource not found.") || strings.Contains(err.Error(), "no result")) {
+		return EthBlock{}, nil
+	}
 	if err != nil {
 		return EthBlock{}, fmt.Errorf("invoking method: %w", err)
 	}

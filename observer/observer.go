@@ -29,23 +29,16 @@ func (s *Service) Start() error {
 	for currentBlock := latestBlock; ; {
 		log.Println("Checking for new block...")
 
-		latestBlock, err := s.RPC.InvokeBlockNumber()
+		block, err := s.RPC.InvokeGetBlockByNumber(currentBlock)
 		if err != nil {
-			return fmt.Errorf("invoking blockNumber: %w", err)
+			return fmt.Errorf("invoking getBlockByHash: %w", err)
 		}
-
-		// If already caught up to latest, wait until next check
-		if currentBlock >= latestBlock {
+		if block.Number == "" {
 			time.Sleep(time.Second * 1)
 			continue
 		}
 
 		log.Printf("Processing block %d", currentBlock)
-
-		block, err := s.RPC.InvokeGetBlockByNumber(currentBlock)
-		if err != nil {
-			return fmt.Errorf("invoking getBlockByHash: %w", err)
-		}
 
 		subscribers, err := s.Repo.GetSubscribers()
 		if err != nil {
