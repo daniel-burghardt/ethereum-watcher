@@ -36,7 +36,7 @@ func main() {
 
 	log.Printf("Starting the server on port %d...", serverPort)
 	http.HandleFunc("/", http.NotFound)
-	http.HandleFunc("GET /block", handler.GetCurrentBlock)
+	http.HandleFunc("GET /current-block", handler.GetCurrentBlock)
 	http.HandleFunc("POST /subscribe/{address}", handler.PostSubscribe)
 	http.HandleFunc("GET /transactions/{address}", handler.GetTransactions)
 	http.ListenAndServe(fmt.Sprintf("localhost:%d", serverPort), nil)
