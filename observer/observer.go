@@ -13,8 +13,9 @@ import (
 )
 
 type Service struct {
-	RPC  ethrpc.Service
-	Repo data.Repository
+	RPC        ethrpc.Service
+	Repo       data.Repository
+	WebhookUrl string
 }
 
 func (s *Service) Start() error {
@@ -41,33 +42,39 @@ func (s *Service) Start() error {
 
 		log.Printf("Processing block %d", currentBlock)
 
-		subscribers, err := s.Repo.GetSubscribers()
-		if err != nil {
-			return fmt.Errorf("getting subscribers: %w", err)
-		}
-
 		block, err := s.RPC.InvokeGetBlockByNumber(currentBlock)
 		if err != nil {
 			return fmt.Errorf("invoking getBlockByHash: %w", err)
 		}
 
+		subscribers, err := s.Repo.GetSubscribers()
+		if err != nil {
+			return fmt.Errorf("getting subscribers: %w", err)
+		}
+
 		// Ingest block transactions
 		for _, ethTx := range block.Transactions {
-			// Verify whether either From or To addresses match any of the subscribed addresses
-			if !slices.ContainsFunc(subscribers, func(sub string) bool {
-				return strings.EqualFold(sub, ethTx.From) || strings.EqualFold(sub, ethTx.To)
-			}) {
+			txSubs := FindSubcribers(subscribers, []string{ethTx.From, ethTx.To})
+			if len(txSubs) == 0 {
 				continue
 			}
 
-			log.Printf("Subscribed address found, storing transaction")
+			log.Printf("Subscribed address found, processing transaction")
 
 			tx, err := ParseTransaction(ethTx)
 			if err != nil {
 				return fmt.Errorf("parsing transaction: %w", err)
 			}
 
-			s.Repo.AddTransaction(tx)
+			err = s.Repo.AddTransaction(tx)
+			if err != nil {
+				return fmt.Errorf("storing transaction: %w", err)
+			}
+
+			err = s.PostTransactionWebhook(txSubs)
+			if err != nil {
+				return fmt.Errorf("posting transaction webhook: %w", err)
+			}
 		}
 
 		err = s.Repo.UpdateCurrentBlock(currentBlock)
@@ -77,6 +84,19 @@ func (s *Service) Start() error {
 
 		currentBlock++
 	}
+}
+
+func FindSubcribers(subscribers []string, targets []string) []string {
+	matches := []string{}
+	for _, target := range targets {
+		if slices.ContainsFunc(subscribers, func(sub string) bool {
+			return strings.EqualFold(sub, target)
+		}) {
+			matches = append(matches, target)
+		}
+	}
+
+	return matches
 }
 
 func ParseTransaction(tx ethrpc.EthTransaction) (data.Transaction, error) {

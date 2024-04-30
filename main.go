@@ -15,11 +15,14 @@ import (
 const serverPort = 3000
 
 func main() {
+	// Get ENVs
 	serverUrl := os.Getenv("ETH_SERVER_URL")
 	if serverUrl == "" {
-		serverUrl = "https://rpc.sepolia.org"
+		serverUrl = "https://cloudflare-eth.com"
 	}
+	webhookUrl := os.Getenv("WEBHOOK_URL")
 
+	// Setup dependencies
 	repo := data.NewInMemoryStorage()
 	handler := httphandler.Handler{
 		Repo: repo,
@@ -28,8 +31,9 @@ func main() {
 		Url: serverUrl,
 	}
 	observerService := observer.Service{
-		RPC:  rpcService,
-		Repo: repo,
+		RPC:        rpcService,
+		Repo:       repo,
+		WebhookUrl: webhookUrl,
 	}
 
 	go observerService.Start()
