@@ -12,7 +12,7 @@ Additionally, a webhook URL can be configured to receive live notifications abou
 
 The following environment variables can be configured:
 
-- `ETH_SERVER_URL` (optional): specified which RPC node to connect to. Defaults to `https://cloudflare-eth.com`;
+- `ETH_SERVER_URL` (optional): specifies which RPC node to connect to. Defaults to `https://cloudflare-eth.com`;
 - `WEBHOOK_URL` (optional): when provided the service will make a post request to this URL informing about new transactions for one or more subscribed addresses;
 
 ### Endpoints
@@ -23,7 +23,7 @@ Returns the latest block the service has ingested.
 
 #### `POST /subscribe/{address}`
 
-Subscribes `{address}` to the watcher service. Once subscribed, its transactions will be tracked and persistent in the service's storage.
+Subscribes `{address}` to the watcher service. Once subscribed, its transactions will be tracked and persisted in the service's storage.
 
 #### `GET /transactions/{address}`
 
@@ -51,9 +51,9 @@ In the same fashion, the webhook URL can be set with `export WEBHOOK_URL=https:/
 
 The current implementation uses the `eth_blockNumber` method to fetch the latest block from the ledger. However, this method presented some lag in the tests conducted, taking a few seconds after the closing time of the latest block to return the updated value.
 
-An alternative version calling `eth_getBlockByNumber` directly until the response is not empty is implemented on separate branch `performance-improvement`. This approach presented a significant performance improvement (delays below 1s) over the current one, but it relies on RPC method calls to error, which resulted in a different response objects in the tests conducted (with `https://rpc.sepolia.org` and `https://cloudflare-eth.com`) depending on the RPC node. Although promising this approach requires some further experimentations.
+An alternative version calling `eth_getBlockByNumber` directly until the response is not empty is implemented on separate a branch `performance-improvement`. This approach presented a significant performance improvement (delays below 1s) over the current one, but it relies on RPC calls to error, which resulted in a different responses in the tests conducted (with `https://rpc.sepolia.org` and `https://cloudflare-eth.com`) depending on the RPC node. Although promising this approach requires further experimentation.
 
-A third alternative was also tested using `eth_newBlockFilter` and `eth_getFilterChanges` to get the latest block information. Although it presented great performance improvement (similar to the one described above), Cloudflare's Public RPC node doesn't support either of the methods as of now: see [docs](https://developers.cloudflare.com/web3/ethereum-gateway/reference/supported-api-methods/).
+A third alternative was tested using `eth_newBlockFilter` and `eth_getFilterChanges` to get the latest block information. Although it presented great performance improvement (similar to the one described above), Cloudflare's Public RPC node doesn't support either of the methods as of now: see [docs](https://developers.cloudflare.com/web3/ethereum-gateway/reference/supported-api-methods/).
 
 ### Webhook
 
